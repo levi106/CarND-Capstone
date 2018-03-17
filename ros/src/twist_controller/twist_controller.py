@@ -1,21 +1,25 @@
+from pid import PID
+from lowpass import LowPassFilter
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
 
 class Controller(object):
-    def __init__(self, yaw_controller):
+    def __init__(self, yaw_controller, freq):
         # TODO: Implement
+        self.sample_time = 1. / freq
         self.yaw_controller = yaw_controller
+        self.throttle_pid = PID(self.sample_time * 1.5, 0, 0, 0., 1.)
+        self.brake_pid = PID(self.sample_time, 0, 0, 0., 1.)
 
     def control(self, linear_velocity, angular_velocity, current_velocity):
         # TODO: Change the arg, kwarg list to suit your needs
         # Return throttle, brake, steer
         steer = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_velocity)
-        throttle = 0.
-        brake = 0.
-        if linear_velocity > current_velocity:
-            throttle = min((linear_velocity - current_velocity) / 10., 0.5)
-        elif linear_velocity < current_velocity:
-            brake = -min((current_velocity - linear_velocity) / 10., 3.)
+
+        err = linear_velocity - current_velocity
+        throttle = self.throttle_pid.step(err, self.sample_time)
+        brake = self.brake_pid.step(-err, self.sample_time)
+
         return throttle, brake, steer
