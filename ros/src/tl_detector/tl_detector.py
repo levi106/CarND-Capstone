@@ -11,6 +11,8 @@ import tf
 import cv2
 import yaml
 
+import math
+
 STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
@@ -90,6 +92,7 @@ class TLDetector(object):
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
+    #----------------------------------------------------------------------------
     def get_closest_waypoint(self, pose):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
@@ -100,8 +103,35 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+
+        # waypoints_List = [(waypoint_1_x, waypoint_1_y), (waypoint_2_x, waypoint_2_y), ... ]
+        # format from: waypoint_loader.py
+        waypoints_List = [(Pt.pose.pose.position.x, Pt.pose.pose.position.y) for Pt in self.waypoints.waypoints]
+        waypoint_idx = -1
+
+        x1 = pose.position.x
+        y1 = pose.position.y
+
+        min_Dist = float('inf')
+
+        for idx in range(len(waypoints_List)):
+
+            x2 = waypoints_List[idx][0]
+            y2 = waypoints_List[idx][1]
+
+            delta_x = x1-x2
+            delta_y = y1-y2
+
+            distance = math.sqrt(delta_x*delta_x + delta_y*delta_x)
+
+            if(distance < min_Dist):
+                min_Dist = distance
+                waypoint_idx = idx
+
+
+        return waypoint_idx
+
+    #----------------------------------------------------------------------------
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
