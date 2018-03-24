@@ -50,6 +50,12 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+        self.light_waypoints = []
+        self.stop_line_waypoints = []
+
+        # Use an accurate ground truth data source for the traffic light classifier.
+        # We have to disable this flag in real life.
+        self.use_ground_truth = True
 
         rospy.spin()
 
@@ -58,6 +64,18 @@ class TLDetector(object):
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
+        if len(self.light_waypoints) == 0:
+          for light in self.lights:
+            waypoint = self.get_closest_waypoint(light.pose.pose)
+            self.light_waypoints.append(waypoint)
+
+        if len(self.stop_line_waypoints) == 0:
+            for stop_line_position in self.config['stop_line_positions']:
+                pose = Pose()
+                pose.position.x = stop_line_position[0]
+                pose.position.y = stop_line_position[1]
+                waypoint = self.get_closest_waypoint(pose)
+                self.stop_line_waypoints.append(waypoint)
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -122,7 +140,7 @@ class TLDetector(object):
             delta_x = x1-x2
             delta_y = y1-y2
 
-            distance = math.sqrt(delta_x*delta_x + delta_y*delta_x)
+            distance = math.sqrt(delta_x*delta_x + delta_y*delta_y)
 
             if(distance < min_Dist):
                 min_Dist = distance
@@ -132,6 +150,12 @@ class TLDetector(object):
         return waypoint_idx
 
     #----------------------------------------------------------------------------
+
+    def get_closest_traffic_light(self, car_position):
+      for i, waypoint in enumerate(self.light_waypoints):
+        if car_position < waypoint:
+          return i
+      return -1
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -143,6 +167,10 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+
+        if self.use_ground_truth:
+            return light.state
+
         if(not self.has_image):
             self.prev_light_loc = None
             return False
@@ -169,11 +197,17 @@ class TLDetector(object):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)
+        if self.use_ground_truth:
+          index = self.get_closest_traffic_light(car_position)
+          if index >= 0:
+            light = self.lights[index]
+            light_wp = self.stop_line_waypoints[index]
 
         if light:
             state = self.get_light_state(light)
             return light_wp, state
-        self.waypoints = None
+
+        #self.waypoints = None
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
