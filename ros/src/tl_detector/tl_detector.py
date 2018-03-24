@@ -152,10 +152,10 @@ class TLDetector(object):
     #----------------------------------------------------------------------------
 
     def get_closest_traffic_light(self, car_position):
-      for i, waypoint in enumerate(self.light_waypoints):
-        if car_position < waypoint:
-          return i
-      return -1
+        for i, waypoint in enumerate(self.light_waypoints):
+            if car_position < waypoint:
+                return i
+        return -1
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -199,9 +199,12 @@ class TLDetector(object):
         #TODO find the closest visible traffic light (if one exists)
         if self.use_ground_truth:
           index = self.get_closest_traffic_light(car_position)
-          if index >= 0:
+          if index >= 0 and len(self.lights) > 0 and len(self.stop_line_waypoints) > 0:
             light = self.lights[index]
             light_wp = self.stop_line_waypoints[index]
+            if light_wp - car_position > 40:
+                # The traffic light is too far. 
+                return -1, TrafficLight.UNKNOWN
 
         if light:
             state = self.get_light_state(light)
