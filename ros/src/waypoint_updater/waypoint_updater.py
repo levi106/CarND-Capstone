@@ -6,6 +6,7 @@ from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
 import math
+import copy
 
 import tf
 import numpy as np
@@ -27,7 +28,6 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 50# 200 # Number of waypoints we will publish. You can change this number
 
-
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
@@ -43,6 +43,7 @@ class WaypointUpdater(object):
 
         # TODO: Add other member variables you need below
         self.base_waypoints = None
+        self.traffic_waypoint = -1
 
         rospy.spin()
 
@@ -52,9 +53,22 @@ class WaypointUpdater(object):
             return
         
         closest = self.get_closest_waypoint(msg.pose)
+
         waypoints = []
         for waypoint in self.base_waypoints.waypoints[closest:closest+LOOKAHEAD_WPS]:
-            waypoints.append(waypoint)
+            waypoints.append(copy.deepcopy(waypoint))
+
+        if self.traffic_waypoint != -1:
+            max_v = self.get_waypoint_velocity(self.base_waypoints.waypoints[closest])
+            for i in range(len(waypoints)):
+                if (i + closest) >= self.traffic_waypoint:
+                    self.set_waypoint_velocity(waypoints, i, 0)
+                else:
+                    # XXX Very navie implementation. We have to improve it.
+                    d = self.distance(self.base_waypoints.waypoints, i + closest, self.traffic_waypoint)
+                    v = min(d * max_v / 30., max_v)
+                    self.set_waypoint_velocity(waypoints, i, v)
+            #rospy.logwarn('dist:{}, v:{}'.format(self.distance(self.base_waypoints.waypoints, closest, self.traffic_waypoint), self.get_waypoint_velocity(waypoints[0])))
 
         self.publish(waypoints)
 
@@ -64,7 +78,7 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        self.traffic_waypoint = msg.data
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
