@@ -103,22 +103,22 @@ class TLClassifier(object):
         unique_classes, counts = np.unique(detections_above_thresh, return_counts=True)
         most_probable_class = unique_classes[counts.argsort()[::-1]]
         tld_class = int(most_probable_class.item(0)) if len(most_probable_class) > 0 else 4
+        '''
+        if tld_class == 1:
+	    return TrafficLight.RED
+	elif tld_class == 2:
+	    return TrafficLight.YELLOW
+	elif tld_class == 3:
+	    return TrafficLight.GREEN
+        else:
+            return TrafficLight.UNKNOWN
+        '''
+        if tld_class == 1:
+	    return TrafficLight.GREEN
+	elif tld_class == 2:
+	    return TrafficLight.RED
+	elif tld_class == 3:
+	    return TrafficLight.YELLOW
+        else:
+            return TrafficLight.UNKNOWN
         
-        if tld_class == 1:
-	    return TrafficLight.RED
-	elif tld_class == 2:
-	    return TrafficLight.YELLOW
-	elif tld_class == 3:
-	    return TrafficLight.GREEN
-        else:
-            return TrafficLight.UNKNOWN
-        '''
-        if tld_class == 1:
-	    return TrafficLight.GREEN
-	elif tld_class == 2:
-	    return TrafficLight.RED
-	elif tld_class == 3:
-	    return TrafficLight.YELLOW
-        else:
-            return TrafficLight.UNKNOWN
-        '''
