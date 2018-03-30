@@ -23,7 +23,7 @@ class TLClassifier(object):
     def __init__(self):
         #TODO load classifier
         current_path = os.path.dirname(os.path.realpath(__file__))
-        frozen_model = current_path + '/classifiers/frozen_inference_graph_ssd_inception_sim.pb'
+        frozen_model = current_path + '/classifiers/frozen_inference_graph_rcnn_20.pb'
         #frozen_model = current_path + '/classifiers/frozen_inference_graph.pb'
 
         label_map_file = current_path + '/label_map.pbtxt'
