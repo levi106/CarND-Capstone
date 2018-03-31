@@ -104,20 +104,21 @@ class WaypointUpdater(object):
 
     def decelerate_waypoints(self, waypoints, closest_idx):
         temp = []
+        stop_idx = max(self.stopline_wp_idx - closest_idx - 2, 0)
         for i, wp in enumerate(waypoints):
             p = Waypoint()
             p.pose = wp.pose
 
-            stop_idx = max(self.stopline_wp_idx - closest_idx - 2, 0)
             dist = self.distance(waypoints, i, stop_idx)
-            vel = math.sqrt(2 * self.max_decel * dist)
+            vel = math.sqrt(self.max_decel * dist)
             if vel < 1.:
                 vel = 0.
 
             p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
             temp.append(p)
 
-        rospy.logwarn('{}'.format(temp[0].twist.twist.linear.x))
+        d = self.distance(waypoints, 0, stop_idx)
+        rospy.logwarn('target vel={}, distance to the stopline={}'.format(temp[0].twist.twist.linear.x, d))
         return temp
 
     def pose_cb(self, msg):
@@ -128,7 +129,7 @@ class WaypointUpdater(object):
         # TODO: Implement
         self.base_lane = waypoints
         ref_v = waypoints.waypoints[0].twist.twist.linear.x
-        self.max_decel = ref_v * ref_v / 30.
+        self.max_decel = ref_v * ref_v / 20. # Begin applying the brake about 20m before
         rospy.logwarn('MAX_DECEL={}'.format(self.max_decel))
         if not self.waypoints_2d:
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
