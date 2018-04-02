@@ -118,7 +118,7 @@ class WaypointUpdater(object):
             temp.append(p)
 
         d = self.distance(waypoints, 0, stop_idx)
-        rospy.logwarn('target vel={}, distance to the stopline={}'.format(temp[0].twist.twist.linear.x, d))
+        #rospy.logwarn('target vel={}, distance to the stopline={}'.format(temp[0].twist.twist.linear.x, d))
         return temp
 
     def pose_cb(self, msg):
