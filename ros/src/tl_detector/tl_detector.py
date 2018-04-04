@@ -191,8 +191,8 @@ class TLDetector(object):
                 
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
-            if car_position is not None:
-                self.last_car_position = car_position
+            #if car_position is not None:
+            #    self.last_car_position = car_position
         else:
             return -1, TrafficLight.UNKNOWN 
 
