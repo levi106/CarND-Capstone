@@ -91,26 +91,26 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
-	if(state != TrafficLight.UNKNOWN):
-		if self.state != state:
-		    self.state_count = 0
-		    self.state = state
-		elif self.state_count >= STATE_COUNT_THRESHOLD:
-		    self.last_state = self.state
-		    light_wp = light_wp if state == TrafficLight.RED else -1
-		    self.last_wp = light_wp
-		    self.upcoming_red_light_pub.publish(Int32(light_wp))           
-		else:
-		    self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-		self.state_count += 1
-	
+        if(state != TrafficLight.UNKNOWN):
+            if self.state != state:
+                self.state_count = 0
+                self.state = state
+            elif self.state_count >= STATE_COUNT_THRESHOLD:
+                self.last_state = self.state
+                light_wp = light_wp if state == TrafficLight.RED else -1
+                self.last_wp = light_wp
+                self.upcoming_red_light_pub.publish(Int32(light_wp))           
+            else:
+                self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+            self.state_count += 1
+    
     def l2_dist(self, car_pose, wp_pose):
         dist = math.sqrt( pow(car_pose.x - wp_pose.x, 2 ) + pow(car_pose.y - wp_pose.y, 2 ))
-	return dist 
+    return dist 
 
     def l2_dist_tl(self, tl_pose, wp_pose):
         dist = math.sqrt( pow(tl_pose[0] - wp_pose.x, 2 ) + pow(tl_pose[1] - wp_pose.y, 2 ))
-	return dist 
+    return dist 
 
 
     def get_closest_waypoint(self, pose):
@@ -188,23 +188,23 @@ class TLDetector(object):
                 
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
-            if car_position is not None:
-                self.last_car_position = car_position
+        else
+            return -1, TrafficLight.UNKNOWN
 
         waypoints_traffic_light = []
         if self.waypoints is not None:
             waypoints_position = self.waypoints
             for i in range(len(stop_line_positions)):
-		                
+                        
                 waypoint_closest_idx = None
                 waypoints = waypoints_position.waypoints
                 min_Dist = self.l2_dist_tl(stop_line_positions[i], waypoints[0].pose.pose.position)
                 for j, point in enumerate(waypoints):
-            	    dist = self.l2_dist_tl(stop_line_positions[i], point.pose.pose.position)
+                    dist = self.l2_dist_tl(stop_line_positions[i], point.pose.pose.position)
                     if dist < min_Dist:
                         waypoint_closest_idx = j
                         min_Dist = dist
-                waypoints_traffic_light.append(waypoint_closest_idx)		
+                waypoints_traffic_light.append(waypoint_closest_idx)        
             self.waypoint_traffic_light_previous = waypoints_traffic_light
         else:
             waypoints_traffic_light = self.waypoint_traffic_light_previous

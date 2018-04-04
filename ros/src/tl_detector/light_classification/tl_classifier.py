@@ -7,24 +7,22 @@ import os
 import sys
 
 import tensorflow as tf
-
 from io import StringIO
-
 from utils import label_map_util
-from utils import visualization_utils
 import time
-
 import numpy as np
 
 
-
+SIMULATOR = 0
 
 class TLClassifier(object):
     def __init__(self):
         #TODO load classifier
         current_path = os.path.dirname(os.path.realpath(__file__))
-        frozen_model = current_path + '/classifiers/frozen_inference_graph_rcnn_10.pb'
-        #frozen_model = current_path + '/classifiers/frozen_inference_graph.pb'
+        if (SIMULATOR == 1):
+            frozen_model = current_path + '/classifiers/frozen_inference_graph_rcnn_10.pb'
+        else:
+        	frozen_model = current_path + '/classifiers/frozen_inference_graph_real_10.pb'
 
         label_map_file = current_path + '/label_map.pbtxt'
         num_classes = 4
@@ -97,28 +95,23 @@ class TLClassifier(object):
 
         return self.current_light
         '''
-        min_score_thresh = 0.5
+        if (SIMULATOR == 1):
+            min_score_thresh = 0.5
+        else:
+        	min_score_thresh = 0.75
+        
         condition = scores > min_score_thresh
         detections_above_thresh = np.extract(condition, classes)
         unique_classes, counts = np.unique(detections_above_thresh, return_counts=True)
         most_probable_class = unique_classes[counts.argsort()[::-1]]
         tld_class = int(most_probable_class.item(0)) if len(most_probable_class) > 0 else 4
-        '''
+
         if tld_class == 1:
-	    return TrafficLight.RED
-	elif tld_class == 2:
-	    return TrafficLight.YELLOW
-	elif tld_class == 3:
-	    return TrafficLight.GREEN
-        else:
-            return TrafficLight.UNKNOWN
-        '''
-        if tld_class == 1:
-	    return TrafficLight.GREEN
-	elif tld_class == 2:
-	    return TrafficLight.RED
-	elif tld_class == 3:
-	    return TrafficLight.YELLOW
+	        return TrafficLight.GREEN
+	    elif tld_class == 2:
+	        return TrafficLight.RED
+	    elif tld_class == 3:
+	        return TrafficLight.YELLOW
         else:
             return TrafficLight.UNKNOWN
         
