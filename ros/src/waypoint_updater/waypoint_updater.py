@@ -104,7 +104,7 @@ class WaypointUpdater(object):
 
     def decelerate_waypoints(self, waypoints, closest_idx):
         temp = []
-        stop_idx = max(self.stopline_wp_idx - closest_idx - 2, 0)
+        stop_idx = max(self.stopline_wp_idx - closest_idx - 3, 0)
         for i, wp in enumerate(waypoints):
             p = Waypoint()
             p.pose = wp.pose
@@ -118,7 +118,7 @@ class WaypointUpdater(object):
             temp.append(p)
 
         d = self.distance(waypoints, 0, stop_idx)
-        #rospy.logwarn('target vel={}, distance to the stopline={}'.format(temp[0].twist.twist.linear.x, d))
+        rospy.loginfo('target vel={}, distance to the stopline={}'.format(temp[0].twist.twist.linear.x, d))
         return temp
 
     def pose_cb(self, msg):
