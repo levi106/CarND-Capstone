@@ -50,6 +50,8 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+        self.last_car_position = 0
+        self.waypoint_traffic_light_previous = []
 
         rospy.spin()
 
@@ -162,10 +164,11 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+
         if(not self.has_image):
             self.prev_light_loc = None
             return False
-
+        
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
         return self.light_classifier.get_classification(cv_image)
 
@@ -180,31 +183,32 @@ class TLDetector(object):
 
         """
         light = None
-
-
+        
         
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
                 
+                
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
+            if car_position is not None:
+                self.last_car_position = car_position
         else:
-            return -1, TrafficLight.UNKNOWN
+            return -1, TrafficLight.UNKNOWN 
 
         waypoints_traffic_light = []
         if self.waypoints is not None:
             waypoints_position = self.waypoints
-            for i in range(len(stop_line_positions)):
-                        
+            for i in range(len(stop_line_positions)):                
                 waypoint_closest_idx = None
                 waypoints = waypoints_position.waypoints
                 min_Dist = self.l2_dist_tl(stop_line_positions[i], waypoints[0].pose.pose.position)
                 for j, point in enumerate(waypoints):
-                    dist = self.l2_dist_tl(stop_line_positions[i], point.pose.pose.position)
+            	    dist = self.l2_dist_tl(stop_line_positions[i], point.pose.pose.position)
                     if dist < min_Dist:
                         waypoint_closest_idx = j
                         min_Dist = dist
-                waypoints_traffic_light.append(waypoint_closest_idx)        
+                waypoints_traffic_light.append(waypoint_closest_idx)		
             self.waypoint_traffic_light_previous = waypoints_traffic_light
         else:
             waypoints_traffic_light = self.waypoint_traffic_light_previous
@@ -222,7 +226,7 @@ class TLDetector(object):
         traffic_light_dist = self.l2_dist_tl(light, self.waypoints.waypoints[self.last_car_position].pose.pose.position)
         
         #TODO find the closest visible traffic light (if one exists)
-
+        
         if light:
             if (traffic_light_dist >= 100.0):
                 return -1, TrafficLight.UNKNOWN       
