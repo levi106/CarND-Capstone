@@ -106,11 +106,11 @@ class TLDetector(object):
     
     def l2_dist(self, car_pose, wp_pose):
         dist = math.sqrt( pow(car_pose.x - wp_pose.x, 2 ) + pow(car_pose.y - wp_pose.y, 2 ))
-    return dist 
+        return dist 
 
     def l2_dist_tl(self, tl_pose, wp_pose):
         dist = math.sqrt( pow(tl_pose[0] - wp_pose.x, 2 ) + pow(tl_pose[1] - wp_pose.y, 2 ))
-    return dist 
+        return dist 
 
 
     def get_closest_waypoint(self, pose):
@@ -188,7 +188,7 @@ class TLDetector(object):
                 
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
-        else
+        else:
             return -1, TrafficLight.UNKNOWN
 
         waypoints_traffic_light = []

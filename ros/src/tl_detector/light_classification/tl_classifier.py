@@ -22,7 +22,7 @@ class TLClassifier(object):
         if (SIMULATOR == 1):
             frozen_model = current_path + '/classifiers/frozen_inference_graph_rcnn_10.pb'
         else:
-        	frozen_model = current_path + '/classifiers/frozen_inference_graph_real_10.pb'
+            frozen_model = current_path + '/classifiers/frozen_inference_graph_real_10.pb'
 
         label_map_file = current_path + '/label_map.pbtxt'
         num_classes = 4
@@ -82,23 +82,23 @@ class TLClassifier(object):
         for i in range(boxes.shape[0]):
             
             if scores is None or scores[i] > score_threshold:
-		print("boxes shape : ", boxes[0].shape)
-		class_name = self.category_index[classes[i]]['name']
+        print("boxes shape : ", boxes[0].shape)
+        class_name = self.category_index[classes[i]]['name']
 
-		if class_name == 'Red':
-		    self.current_light = TrafficLight.RED
-		elif class_name == 'Green':
-		    self.current_light = TrafficLight.GREEN
-		elif class_name == 'Yellow':
-		    self.current_light = TrafficLight.YELLOW
-		    
+        if class_name == 'Red':
+            self.current_light = TrafficLight.RED
+        elif class_name == 'Green':
+            self.current_light = TrafficLight.GREEN
+        elif class_name == 'Yellow':
+            self.current_light = TrafficLight.YELLOW
+            
 
         return self.current_light
         '''
         if (SIMULATOR == 1):
             min_score_thresh = 0.5
         else:
-        	min_score_thresh = 0.75
+            min_score_thresh = 0.75
         
         condition = scores > min_score_thresh
         detections_above_thresh = np.extract(condition, classes)
@@ -107,11 +107,11 @@ class TLClassifier(object):
         tld_class = int(most_probable_class.item(0)) if len(most_probable_class) > 0 else 4
 
         if tld_class == 1:
-	        return TrafficLight.GREEN
-	    elif tld_class == 2:
-	        return TrafficLight.RED
-	    elif tld_class == 3:
-	        return TrafficLight.YELLOW
+            return TrafficLight.GREEN
+        elif tld_class == 2:
+            return TrafficLight.RED
+        elif tld_class == 3:
+            return TrafficLight.YELLOW
         else:
             return TrafficLight.UNKNOWN
         
