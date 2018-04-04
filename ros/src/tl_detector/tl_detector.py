@@ -13,7 +13,7 @@ import yaml
 import math
 
 
-STATE_COUNT_THRESHOLD = 3
+STATE_COUNT_THRESHOLD = 0
 
 class TLDetector(object):
     def __init__(self):
@@ -91,18 +91,18 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
-	
-        if self.state != state:
-            self.state_count = 0
-            self.state = state
-        elif self.state_count >= STATE_COUNT_THRESHOLD:
-            self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
-            self.last_wp = light_wp
-            self.upcoming_red_light_pub.publish(Int32(light_wp))           
-        else:
-            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-        self.state_count += 1
+	if(state != TrafficLight.UNKNOWN):
+		if self.state != state:
+		    self.state_count = 0
+		    self.state = state
+		elif self.state_count >= STATE_COUNT_THRESHOLD:
+		    self.last_state = self.state
+		    light_wp = light_wp if state == TrafficLight.RED else -1
+		    self.last_wp = light_wp
+		    self.upcoming_red_light_pub.publish(Int32(light_wp))           
+		else:
+		    self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+		self.state_count += 1
 	
     def l2_dist(self, car_pose, wp_pose):
         dist = math.sqrt( pow(car_pose.x - wp_pose.x, 2 ) + pow(car_pose.y - wp_pose.y, 2 ))
@@ -181,7 +181,7 @@ class TLDetector(object):
         """
         light = None
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
+
         
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
@@ -225,10 +225,10 @@ class TLDetector(object):
 
         if light:
             if (traffic_light_dist >= 100.0):
-                return -1, TrafficLight.UNKNOWN   
+                return -1, TrafficLight.UNKNOWN       
             else:
                 state = self.get_light_state(light)
-                return waypoint_traffic_light_num, state
+                return waypoint_traffic_light_num, state            
         self.waypoints = None
         return -1, TrafficLight.UNKNOWN
 

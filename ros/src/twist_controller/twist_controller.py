@@ -1,3 +1,4 @@
+import rospy
 from pid import PID
 from lowpass import LowPassFilter
 
@@ -6,38 +7,44 @@ ONE_MPH = 0.44704
 
 
 class Controller(object):
-    def __init__(self, yaw_controller, freq):
+    def __init__(self, yaw_controller, vehicle_mass, decel_limit, accel_limit, wheel_radius):
         # TODO: Implement
-        self.sample_time = 1. / freq
+        self.vehicle_mass = vehicle_mass
+        self.decel_limit = decel_limit
+        self.accel_limit = accel_limit
+        self.wheel_radius = wheel_radius
         self.yaw_controller = yaw_controller
-        self.throttle_pid = PID(self.sample_time * 1.5, 0.002, 0., 0., 0.4)
-        self.brake_pid = PID(self.sample_time*1.5, 0.002, 0., 0., 0.4)
+        self.throttle_pid = PID(0.3,0.1,0.,0.,0.2)
+        self.throttle_filt = LowPassFilter(0.5,.02)
+        self.steer_filt = LowPassFilter(1.,1.)
+        self.last_time = rospy.get_time()
 
-	self.throttle_filt = LowPassFilter(1.,1.)
-	self.brake_filt = LowPassFilter(1.,1.)
-	self.steer_filt = LowPassFilter(1.,1.)
-
-    def control(self, linear_velocity, angular_velocity, current_velocity):
+    def control(self, linear_velocity, angular_velocity, current_velocity, dbw_enabled):
         # TODO: Change the arg, kwarg list to suit your needs
         # Return throttle, brake, steer
+        if not dbw_enabled:
+            self.throttle_pid.reset()
+            return 0., 0., 0.
+
+        current_velocity = self.throttle_filt.filt(current_velocity)
         steer = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_velocity)
+        steer = self.steer_filt.filt(steer)
 
         err = linear_velocity - current_velocity
-        throttle = self.throttle_pid.step(err, self.sample_time)
-        brake = self.brake_pid.step(-err, self.sample_time)
+        current_time = rospy.get_time()
+        sample_time = current_time - self.last_time
+        self.last_time = current_time
+        throttle = self.throttle_pid.step(err, sample_time) 
+        brake = 0
 
-	steer = self.steer_filt.filt(steer)
-	if(current_velocity<linear_velocity):
-		throttle = self.throttle_filt.filt(throttle)
-		brake = 0.
-	else:
-		if(linear_velocity<0.1):
-			throttle = 0.
-			brake = 0.4
-		else:
-			throttle = 0.
-			brake = self.brake_filt.filt(brake)
+        if linear_velocity == 0 and current_velocity < .1:
+            throttle = 0.
+            brake = 400
+        elif throttle < .1 and err < 0:
+            throttle = 0.
+            decel = max(err, self.decel_limit)
+            brake = abs(decel) * self.vehicle_mass * self.wheel_radius
 
-
+        #rospy.logwarn('throttle={}, brake={}, steer={}'.format(throttle, brake, steer))
 
         return throttle, brake, steer

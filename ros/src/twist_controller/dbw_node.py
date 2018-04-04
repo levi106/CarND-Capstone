@@ -57,8 +57,8 @@ class DBWNode(object):
         # TODO: Create `Controller` object
         # self.controller = Controller(<Arguments you wish to provide>)
         self.freq = 50
-        yaw_controller = YawController(wheel_base, steer_ratio, 0, max_lat_accel, max_steer_angle)
-        self.controller = Controller(yaw_controller, self.freq)
+        yaw_controller = YawController(wheel_base, steer_ratio, 0.1, max_lat_accel, max_steer_angle)
+        self.controller = Controller(yaw_controller, vehicle_mass, decel_limit, accel_limit, wheel_radius)
 
         # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
@@ -96,7 +96,8 @@ class DBWNode(object):
             #   self.publish(throttle, brake, steer)
             throttle, brake, steering = self.controller.control(self.proposed_linear_velocity,
                                                                 self.proposed_angular_velocity,
-                                                                self.current_linear_velocity)
+                                                                self.current_linear_velocity,
+                                                                self.dbw_enabled)
             #rospy.logwarn('{} {} {} {}'.format(self.proposed_linear_velocity, self.proposed_angular_velocity, self.current_linear_velocity, steering))
             if self.dbw_enabled:
                 self.publish(throttle, brake, steering)
