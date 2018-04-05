@@ -12,7 +12,7 @@ import cv2
 import yaml
 import math
 
-
+USE_SIMULATOR = 1
 STATE_COUNT_THRESHOLD = 0
 
 class TLDetector(object):
@@ -43,7 +43,7 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
+        self.light_classifier = TLClassifier(simulator = USE_SIMULATOR)
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -191,8 +191,9 @@ class TLDetector(object):
                 
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
-            #if car_position is not None:
-            #    self.last_car_position = car_position
+            if USE_SIMULATOR == 1:
+                if car_position is not None:
+                    self.last_car_position = car_position
         else:
             return -1, TrafficLight.UNKNOWN 
 

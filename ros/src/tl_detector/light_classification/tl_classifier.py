@@ -13,13 +13,14 @@ import time
 import numpy as np
 
 
-SIMULATOR = 0
+
 
 class TLClassifier(object):
-    def __init__(self):
+    def __init__(self, simulator):
         #TODO load classifier
         current_path = os.path.dirname(os.path.realpath(__file__))
-        if (SIMULATOR == 1):
+        self.simulator_used = simulator
+        if (self.simulator_used == 1):
             frozen_model = current_path + '/classifiers/frozen_inference_graph_rcnn_10.pb'
         else:
             frozen_model = current_path + '/classifiers/frozen_inference_graph_real_10.pb'
@@ -95,7 +96,7 @@ class TLClassifier(object):
 
         return self.current_light
         '''
-        if (SIMULATOR == 1):
+        if (self.simulator_used == 1):
             min_score_thresh = 0.5
         else:
             min_score_thresh = 0.75
