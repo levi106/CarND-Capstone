@@ -183,8 +183,8 @@ For more details, see https://discussions.udacity.com/t/issue-simulator-talking-
 
 The total number is 8.
 
-x | y | waypoint index
-- | - | --------------
+ x | y | waypoint index
+--- | --- | --------------
 1172.183 | 1186.299 | 318
 1584.065 | 1156.953 | 784
 2126.353 | 1550.636 | 2095
