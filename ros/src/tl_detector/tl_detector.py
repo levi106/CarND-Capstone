@@ -12,8 +12,7 @@ import cv2
 import yaml
 import math
 
-USE_SIMULATOR = 1
-STATE_COUNT_THRESHOLD = 0
+STATE_COUNT_THRESHOLD = 2
 
 class TLDetector(object):
     def __init__(self):
@@ -43,14 +42,15 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier(simulator = USE_SIMULATOR)
+        self.use_simulator = rospy.get_param('~simulator_used')
+        self.light_classifier = TLClassifier(simulator = self.use_simulator)
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
+        self.prev_state = TrafficLight.UNKNOWN
+        self.prev_waypoint = -1
         self.state_count = 0
-        self.last_car_position = 0
+        self.car_position_prev = 0
         self.waypoint_traffic_light_previous = []
 
         rospy.spin()
@@ -78,15 +78,14 @@ class TLDetector(object):
         light_wp, state = self.process_traffic_lights()
         
         if state == TrafficLight.RED:
-            rospy.logwarn("RED")
+            rospy.loginfo("Detected RED light")
         elif state == TrafficLight.YELLOW:
-            rospy.logwarn("YELLOW")
+            rospy.loginfo("Detected YELLOW light")
         elif state == TrafficLight.GREEN:
-            rospy.logwarn("GREEN")
+            rospy.loginfo("Detected GREEN light")
         else:
-            rospy.logwarn("none")
+            rospy.loginfo("No traffic light detected")
         
-
         '''
         Publish upcoming red lights at camera frequency.
         Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
@@ -98,19 +97,18 @@ class TLDetector(object):
                 self.state_count = 0
                 self.state = state
             elif self.state_count >= STATE_COUNT_THRESHOLD:
-                self.last_state = self.state
+                self.prev_state = self.state
                 light_wp = light_wp if state == TrafficLight.RED else -1
-                self.last_wp = light_wp
+                self.prev_waypoint = light_wp
                 self.upcoming_red_light_pub.publish(Int32(light_wp))           
             else:
-                self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                self.upcoming_red_light_pub.publish(Int32(self.prev_waypoint))
             self.state_count += 1
     
-    def l2_dist(self, car_pose, wp_pose):
-        dist = math.sqrt( pow(car_pose.x - wp_pose.x, 2 ) + pow(car_pose.y - wp_pose.y, 2 ))
-        return dist 
 
     def l2_dist_tl(self, tl_pose, wp_pose):
+        """Calculate euqlidian distance between two points
+        """
         dist = math.sqrt( pow(tl_pose[0] - wp_pose.x, 2 ) + pow(tl_pose[1] - wp_pose.y, 2 ))
         return dist 
 
@@ -126,7 +124,6 @@ class TLDetector(object):
 
         """
 
-        # waypoints_List = [(waypoint_1_x, waypoint_1_y), (waypoint_2_x, waypoint_2_y), ... ]
         # format from: waypoint_loader.py
         waypoints_List = [(Pt.pose.pose.position.x, Pt.pose.pose.position.y) for Pt in self.waypoints.waypoints]
         waypoint_idx = -1
@@ -182,18 +179,15 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+
         light = None
-        
-        
-        # List of positions that correspond to the line to stop in front of for a given intersection
-        stop_line_positions = self.config['stop_line_positions']
-                
+        stop_line_positions = self.config['stop_line_positions']                
                 
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
-            if USE_SIMULATOR == 1:
+            if self.use_simulator == True:
                 if car_position is not None:
-                    self.last_car_position = car_position
+                    self.car_position_prev = car_position
         else:
             return -1, TrafficLight.UNKNOWN 
 
@@ -214,28 +208,30 @@ class TLDetector(object):
         else:
             waypoints_traffic_light = self.waypoint_traffic_light_previous
 
-        if(self.last_car_position > max(waypoints_traffic_light)):
-            waypoint_traffic_light_num = min(waypoints_traffic_light)
+        if(self.car_position_prev > max(waypoints_traffic_light)):
+            traffic_light_waypoint_id = min(waypoints_traffic_light)
         else:
-            light_delta = waypoints_traffic_light[:]
-            light_delta[:] = [x - self.last_car_position for x in light_delta]
-            waypoint_traffic_light_num = min(i for i in light_delta if i > 0) + self.last_car_position
+            light_car_dist = [None]*len(waypoints_traffic_light)
+            traffic_light_waypoint_id = 99999
+            for i in range(len(light_car_dist)):
+                light_car_dist[i] = waypoints_traffic_light[i] - self.car_position_prev
+                if light_car_dist[i] > 0 and light_car_dist[i] < traffic_light_waypoint_id:
+                    traffic_light_waypoint_id = light_car_dist[i]
+            traffic_light_waypoint_id += self.car_position_prev
 
-        waypoint_traffic_light_idx = waypoints_traffic_light.index(waypoint_traffic_light_num)
-        light = stop_line_positions[waypoint_traffic_light_idx]
+        light = stop_line_positions[waypoints_traffic_light.index(traffic_light_waypoint_id)]
 
-        traffic_light_dist = self.l2_dist_tl(light, self.waypoints.waypoints[self.last_car_position].pose.pose.position)
-        
-        #TODO find the closest visible traffic light (if one exists)
+        traffic_light_dist = self.l2_dist_tl(light, self.waypoints.waypoints[self.car_position_prev].pose.pose.position)
         
         if light:
-            if (traffic_light_dist >= 100.0):
-                return -1, TrafficLight.UNKNOWN       
-            else:
+            if (traffic_light_dist < 100.0):
                 state = self.get_light_state(light)
-                return waypoint_traffic_light_num, state            
-        self.waypoints = None
-        return -1, TrafficLight.UNKNOWN
+                return traffic_light_waypoint_id, state
+            else:
+                return -1, TrafficLight.UNKNOWN
+        else:            
+            self.waypoints = None
+            return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
     try:
