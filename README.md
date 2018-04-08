@@ -26,7 +26,54 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 
 ### Perception
 
-*TODO*
+The main task of the Perception module is detection and classification of obstacles in front of the vehicle.
+In case of this project, a front camera is used to analyze surrounding area of vehicle only and obstacles are traffic lights.
+
+The Perception module processes several input signals:
+
+- /current\_pose - position of the vehicle
+- /base\_waypoints - list of waypoints
+- /image\_color - image from the front camera
+- traffic\_light\_config.yaml - list of stop line positions before each traffic lights
+
+Workflow of this module is following:
+
+
+1. Vehicle’s waypoint - Based on vehicle's position on the track [/current\_pose], find the closest waypoint [/base_waypoints] with use of Euclidian distance.
+2. Traffic light’s waypoint - Based on stop lines position in the map (located at sim\_traffic\_light\_config.yaml), find the closest waypoint with use of Euclidian distance.
+3. Detect closest Traffic light’s waypoint in front of the vehicle.
+4. Measure distance between vehicle’s waypoint and the closest traffic light’s waypoint.
+5. If the distance is smaller than some threshold, take an image from vehicles’s camera [/image\_color] and continue with next steps. If there is no close traffic light start from step 1 again.
+6. Run Traffic Light Detector and classifier for the camera’s image [from tl\_classfier.py]
+7. If red light was detected, send information about closest red-light traffic light waypoint to Waypoint Updater Node [/traffic\_waypoint]
+
+#### Traffic lights detection and classification
+Detection and classification of traffic lights on a captured image from front camera is done by Deep learning technique. Two algorithms and architectures were tested:
+
+- Single shot detector v2 (SSD v2) algorithm based on Inception architecture
+- Faster RCNN algorithm based on Resnet101 architecture
+
+For both of these options, pre-trained models from Tensorflow detection model zoo were used. These models were pretrained on COCO dataset which already contains traffic lights.
+To improve accuracy of detection and classification the models were further retrained on labeled images from simulator and rosbag videos. These images were collected and labeled by other Udacity students from previous classes.
+The used dataset is located [here](https://drive.google.com/file/d/0B-Eiyn-CUQtxdUZWMkFfQzdObUE/view). 
+
+TensorFlow Object detection API was used for the retraining step. For both mentioned algorithms and images from simulator 10000 global steps were used. Using AWS p2x.large server, 
+the re-training phase took ~3hours. To make the models suited for Udacity usecases, number of classification classes was changed to 4 (Red, Yellow, Green, Unknown), maximal detections per class to 3 and maximal detections to 4 for Faster-RCNN model.
+For real-world usecase, the pretrained models for simulator images were further trained on real-world images from rosbag for another 10000 steps. 
+The configuration of TensorFlow object detection API was inspired by ColdKnight's blog and repository [here](https://github.com/coldKnight/TrafficLight_Detection-TensorFlowAPI).
+Even if Faster-RCNN inference speed is ~3x slower than SSDv2 model, Faster-RCNN model was used because of much better accuracy. 
+
+Examples of detection and recognition:
+
+![image alt text](imgs/green_sim.png)
+
+![image alt text](imgs/red_sim.png)
+
+![image alt text](imgs/green_real.png)
+
+![image alt text](imgs/green_real2.png)
+
+![image alt text](imgs/red_real.png)
 
 ## Preparation
 
