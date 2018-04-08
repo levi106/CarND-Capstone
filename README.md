@@ -60,6 +60,42 @@ The following is a graph with the x axis as the distance to the stop line and th
 - /vehicle/throttle_cmd
 - /vehicle/brake_cmd
 
+This module publishes three commands throttle, brake and steering.
+
+Throttle and brake values are calculated by the following steps:
+
+1. To reduce noise, apply a low pass filter to the current velocity.
+2. Calculate the difference between the current velocity and the target velocity, and calculate the throttle value with the PID controller.
+3. If the target velocity and the current velocity are almost 0, set the throttle to zero and apply the meximum braking.
+4. If the target velocity is lower than the current velocity, calculate the brake value by taking care of the vehicle mass, the wheel radius and the velocity error.
+
+Steering value is calculated by the following steps:
+
+1. To reduce noise, apply a low pass filter to the current velocity.
+2. Pass the linear velocity, the angular velocity and the current  velocity to the yaw controller and calculate the throttle value.
+3. Apply low pass filter to the output steering value.
+
+For low pass filters and PID filter, We chose each parameter as follows.
+
+**PID filter**
+
+Kp | Ki | Kd | min | max
+-- | -- | -- | --- | ---
+0.3 | 0.1 | 0. | 0. | 0.2
+
+**Low pass filter (current velocity)**
+
+tau | ts
+--- | --
+0.5 | 0.02
+
+**Low pass filter (steering)**
+
+tau | ts
+--- | --
+1 | 1
+
+
 ### Perception
 
 The main task of the Perception module is detection and classification of obstacles in front of the vehicle.
