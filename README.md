@@ -5,7 +5,7 @@
 | | Name | email
 --- | ---- | -----
 Team Lead | Vaibhav Kachore | vaibhav.kachore@gmail.com 
-Team Member 1 | Ayham Zaza | lear.ayham@zoho.com
+Team Member 1 | Ayham Zaza | learn.ayham@zoho.com
 Team Member 2 | Hiroyuki Hasebe | crystalline407@gmail.com
 Team Member 3 | Jan Tomecek | jan.tomecek.jt@gmail.com
 Team Member 4 | Pepar Hugo | peparhugo@gmail.com
