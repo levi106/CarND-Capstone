@@ -57,7 +57,7 @@ class TLClassifier(object):
         
 
 
-    def get_classification(self, image):
+    def get_classification(self, image, convertColorChannels=True):
         """Determines the color of the traffic light in the image
 
         Args:
@@ -69,8 +69,10 @@ class TLClassifier(object):
         """
         #TODO implement light color prediction
         
-
-        image_expanded = np.expand_dims(image, axis=0)
+        image_array = np.asarray(image)
+        if convertColorChannels:
+            image_array = image_array[:,:,::-1]
+        image_expanded = np.expand_dims(image_array, axis=0)
         with self.detection_graph.as_default():
             (boxes, scores, classes, num) = self.sess.run([self.detection_boxes,self.detection_scores,self.detection_classes, self.num_detections], feed_dict={self.image_tensor: image_expanded})
         '''
@@ -106,6 +108,9 @@ class TLClassifier(object):
         unique_classes, counts = np.unique(detections_above_thresh, return_counts=True)
         most_probable_class = unique_classes[counts.argsort()[::-1]]
         tld_class = int(most_probable_class.item(0)) if len(most_probable_class) > 0 else 4
+        rospy.loginfo('{}'.format(classes))
+        rospy.loginfo('{}'.format(scores))
+        rospy.loginfo('{}: {}'.format(tld_class, np.max(np.extract(classes == tld_class, scores))))
 
         if tld_class == 1:
             return TrafficLight.GREEN

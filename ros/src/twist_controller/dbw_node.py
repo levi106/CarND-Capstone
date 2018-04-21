@@ -2,6 +2,7 @@
 
 import rospy
 from std_msgs.msg import Bool
+from std_msgs.msg import Float32 as Float
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 import math
@@ -46,6 +47,7 @@ class DBWNode(object):
         steer_ratio = rospy.get_param('~steer_ratio', 14.8)
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+        simulator_used = rospy.get_param('~simulator_used', True)
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
@@ -58,7 +60,7 @@ class DBWNode(object):
         # self.controller = Controller(<Arguments you wish to provide>)
         self.freq = 50
         yaw_controller = YawController(wheel_base, steer_ratio, 0.1, max_lat_accel, max_steer_angle)
-        self.controller = Controller(yaw_controller, vehicle_mass, decel_limit, accel_limit, wheel_radius)
+        self.controller = Controller(yaw_controller, vehicle_mass, decel_limit, accel_limit, wheel_radius, simulator_used)
 
         # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)

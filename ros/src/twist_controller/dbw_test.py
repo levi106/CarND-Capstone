@@ -5,6 +5,7 @@ import csv
 
 import rospy
 from std_msgs.msg import Bool
+from geometry_msgs.msg import TwistStamped
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 
 
@@ -33,6 +34,8 @@ class DBWTestNode(object):
         rospy.Subscriber('/actual/brake_cmd', BrakeCmd, self.actual_brake_cb)
 
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
 
         self.steer = self.throttle = self.brake = None
 
@@ -47,13 +50,17 @@ class DBWTestNode(object):
         self.throttlefile = os.path.join(base_path, 'throttles.csv')
         self.brakefile = os.path.join(base_path, 'brakes.csv')
 
+        self.current_linear_velocity = 0
+        self.proposed_linear_velocity = 0
+        self.proposed_angular_velocity = 0.
+
         self.loop()
 
     def loop(self):
         rate = rospy.Rate(10) # 10Hz
         while not rospy.is_shutdown():
             rate.sleep()
-        fieldnames = ['actual', 'proposed']
+        fieldnames = ['actual', 'proposed', 'error']
 
         with open(self.steerfile, 'w') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -70,6 +77,13 @@ class DBWTestNode(object):
             writer.writeheader()
             writer.writerows(self.brake_data)
 
+    def velocity_cb(self, msg):
+        self.current_linear_velocity = msg.twist.linear.x
+
+    def twist_cb(self, msg):
+        self.proposed_linear_velocity = msg.twist.linear.x
+        self.proposed_angular_velocity = msg.twist.angular.z
+
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = msg.data
 
@@ -85,19 +99,22 @@ class DBWTestNode(object):
     def actual_steer_cb(self, msg):
         if self.dbw_enabled and self.steer is not None:
             self.steer_data.append({'actual': msg.steering_wheel_angle_cmd,
-                                    'proposed': self.steer})
+                                    'proposed': self.steer,
+                                    'error': self.proposed_linear_velocity - self.current_linear_velocity})
             self.steer = None
 
     def actual_throttle_cb(self, msg):
         if self.dbw_enabled and self.throttle is not None:
             self.throttle_data.append({'actual': msg.pedal_cmd,
-                                       'proposed': self.throttle})
+                                       'proposed': self.throttle,
+                                       'error': self.proposed_linear_velocity - self.current_linear_velocity})
             self.throttle = None
 
     def actual_brake_cb(self, msg):
         if self.dbw_enabled and self.brake is not None:
             self.brake_data.append({'actual': msg.pedal_cmd,
-                                    'proposed': self.brake})
+                                    'proposed': self.brake,
+                                    'error': self.proposed_linear_velocity - self.current_linear_velocity})
             self.brake = None
 
 

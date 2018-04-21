@@ -7,14 +7,18 @@ ONE_MPH = 0.44704
 
 
 class Controller(object):
-    def __init__(self, yaw_controller, vehicle_mass, decel_limit, accel_limit, wheel_radius):
+    def __init__(self, yaw_controller, vehicle_mass, decel_limit, accel_limit, wheel_radius, simulator_used):
         # TODO: Implement
         self.vehicle_mass = vehicle_mass
         self.decel_limit = decel_limit
         self.accel_limit = accel_limit
         self.wheel_radius = wheel_radius
         self.yaw_controller = yaw_controller
-        self.throttle_pid = PID(0.3,0.1,0.,0.,0.2)
+        self.simulator_used = simulator_used
+        if self.simulator_used:
+            self.throttle_pid = PID(0.3,0.1,0.,0.,0.2)
+        else:
+            self.throttle_pid = PID(0.3,0.1,0.,0.,0.025)
         self.throttle_filt = LowPassFilter(0.5,.02)
         self.steer_filt = LowPassFilter(1.,1.)
         self.last_time = rospy.get_time()
@@ -25,6 +29,23 @@ class Controller(object):
         if not dbw_enabled:
             self.throttle_pid.reset()
             return 0., 0., 0.
+
+        if not self.simulator_used:
+            err = linear_velocity - current_velocity
+            steer = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_velocity)
+            #steer = self.steer_filt.filt(steer)
+            if err < -0.01:
+                throttle = 0.
+                brake = 0.25
+            elif err < 0:
+                throttle = 0.
+                brake = 0.1
+            else:
+                throttle = 0.025
+                brake = 0.
+            rospy.loginfo('throttle={}, brake={}, steer={}, current_vel={}, err={}'.format(throttle, brake, steer, current_velocity, err))
+
+            return throttle, brake, steer
 
         current_velocity = self.throttle_filt.filt(current_velocity)
         steer = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_velocity)
