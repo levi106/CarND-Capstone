@@ -30,23 +30,6 @@ class Controller(object):
             self.throttle_pid.reset()
             return 0., 0., 0.
 
-        if not self.simulator_used:
-            err = linear_velocity - current_velocity
-            steer = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_velocity)
-            #steer = self.steer_filt.filt(steer)
-            if err < -0.01:
-                throttle = 0.
-                brake = 0.25
-            elif err < 0:
-                throttle = 0.
-                brake = 0.1
-            else:
-                throttle = 0.025
-                brake = 0.
-            rospy.loginfo('throttle={}, brake={}, steer={}, current_vel={}, err={}'.format(throttle, brake, steer, current_velocity, err))
-
-            return throttle, brake, steer
-
         current_velocity = self.throttle_filt.filt(current_velocity)
         steer = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_velocity)
         steer = self.steer_filt.filt(steer)
@@ -66,6 +49,6 @@ class Controller(object):
             decel = max(err, self.decel_limit)
             brake = abs(decel) * self.vehicle_mass * self.wheel_radius
 
-        rospy.loginfo('throttle={}, brake={}, steer={}, current_vel={}, err={}'.format(throttle, brake, steer, current_velocity, err))
+        rospy.logwarn('throttle={}, brake={}, steer={}, current_vel={}, err={}'.format(throttle, brake, steer, current_velocity, err))
 
         return throttle, brake, steer
